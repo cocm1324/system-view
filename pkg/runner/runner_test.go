@@ -2,9 +2,9 @@ package runner
 
 import "testing"
 
-func Test_RunnerDo(t *testing.T) {
+func TestRunnerDo(t *testing.T) {
 }
 
-func Test_RunnerKill(t *testing.T) {
+func TestRunnerKill(t *testing.T) {
 
 }

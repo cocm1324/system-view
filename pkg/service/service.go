@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/cocm1324/system-view/pkg/request"
+	"github.com/cocm1324/system-view/pkg/runner"
 )
 
 // Service is abstraction of service itself
@@ -16,19 +17,16 @@ import (
 type Service struct {
 	Up               bool
 	ProcessTimeMilli int
+	lastIssued       int
+	runners          map[int]runner.Runner
 	kill             chan bool
 	killed           chan bool
-	runners          []Runner
-}
-
-type Runner struct {
-	done   chan bool
-	kill   chan bool
-	killed chan bool
+	runnerDone       chan int
 }
 
 func New(processTimeMilli int) *Service {
 	return &Service{
+		lastIssued:       0,
 		ProcessTimeMilli: processTimeMilli,
 	}
 }
@@ -41,7 +39,7 @@ func (s *Service) Start() {
 	s.Up = true
 	s.kill = kill
 	s.killed = killed
-	s.runners = make([]Runner, 0)
+	s.runners = make(map[int]runner.Runner)
 
 	// start goroutine
 	go s.start()
@@ -51,39 +49,13 @@ func (s *Service) Kill() {
 	s.Up = false
 	s.kill <- true
 	<-s.killed
+	close(s.kill)
 	close(s.killed)
 }
 
-func (s *Service) Do(r *request.Request) {
-	done := make(chan bool)
-	kill := make(chan bool)
-	killed := make(chan bool)
-	runner := Runner{
-		done:   done,
-		kill:   kill,
-		killed: killed,
-	}
-	s.runners = append(s.runners, runner)
-	go s.do(r, runner)
-}
-
-func (s *Service) do(r *request.Request, n Runner) {
-	go func() {
-		time.Sleep(time.Duration(s.ProcessTimeMilli) * time.Microsecond)
-		n.done <- true
-	}()
-L:
-	for {
-		select {
-		case <-n.kill:
-			fmt.Printf("runner: killed\n")
-			break L
-		case <-n.done:
-			break L
-		default:
-		}
-		time.Sleep(500 * time.Millisecond)
-	}
+func (s *Service) Request(r *request.Request) {
+	s.runners[s.lastIssued] = *runner.New(s.lastIssued, s.ProcessTimeMilli)
+	s.lastIssued += 1
 }
 
 func (s *Service) start() {
@@ -100,6 +72,6 @@ L:
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-	close(s.kill)
+
 	s.killed <- true
 }

@@ -2,11 +2,18 @@ package request
 
 // Request type is request object
 type Request struct {
-	Id         int
 	StatusCode int
-	done       chan bool
+	Done       chan bool
 }
 
-func New() *Request {
-	return &Request{}
+func New(timeoutMilli int) *Request {
+	done := make(chan bool)
+	return &Request{
+		Done: done,
+	}
+}
+
+func (r *Request) Response(statusCode int) {
+	r.StatusCode = statusCode
+	r.Done <- true
 }
