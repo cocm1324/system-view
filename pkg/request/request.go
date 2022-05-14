@@ -6,7 +6,7 @@ type Request struct {
 	Done       chan bool
 }
 
-func New(timeoutMilli int) *Request {
+func New() *Request {
 	done := make(chan bool)
 	return &Request{
 		Done: done,

@@ -72,6 +72,5 @@ L:
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
-
 	s.killed <- true
 }
